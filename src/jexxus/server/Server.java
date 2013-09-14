@@ -1,11 +1,19 @@
 package jexxus.server;
 
 import java.io.IOException;
-import java.net.*;
-import java.util.*;
+import java.net.BindException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
 
 import javax.net.ServerSocketFactory;
-import javax.net.ssl.*;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
 
 import jexxus.common.ConnectionListener;
 
@@ -180,8 +188,6 @@ public class Server {
     synchronized (udpClients) {
       clients.remove(conn.getIP() + conn.getUDPPort());
     }
-    listener.connectionBroken(conn, forced);
-
   }
 
   void sendUDP(byte[] data, ServerConnection serverConnection) {
