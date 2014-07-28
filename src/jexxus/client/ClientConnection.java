@@ -1,13 +1,23 @@
 package jexxus.client;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.Arrays;
 
 import javax.net.SocketFactory;
-import javax.net.ssl.*;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
-import jexxus.common.*;
+import jexxus.common.Connection;
+import jexxus.common.ConnectionListener;
+import jexxus.common.Delivery;
 
 /**
  * Used to establish a connection to a server.
@@ -75,7 +85,7 @@ public class ClientConnection extends Connection {
     }
   }
 
-  public synchronized void connect() throws IOException {
+  public synchronized void connect() {
     connect(0);
   }
 
@@ -84,31 +94,34 @@ public class ClientConnection extends Connection {
    * 
    * @return true if the connection was successful, false otherwise.
    */
-  public synchronized void connect(int timeout) throws IOException {
+  public synchronized void connect(int timeout) {
     if (connected) {
       throw new IllegalStateException("Tried to connect after already connected!");
     }
 
-    SocketFactory socketFactory =
-        useSSL ? SSLSocketFactory.getDefault() : SocketFactory.getDefault();
-    tcpSocket = socketFactory.createSocket();
+    try {
+      SocketFactory socketFactory =
+          useSSL ? SSLSocketFactory.getDefault() : SocketFactory.getDefault();
+      tcpSocket = socketFactory.createSocket();
 
-    if (useSSL) {
-      final String[] enabledCipherSuites = {"SSL_DH_anon_WITH_RC4_128_MD5"};
-      ((SSLSocket) tcpSocket).setEnabledCipherSuites(enabledCipherSuites);
+      if (useSSL) {
+        final String[] enabledCipherSuites = {"SSL_DH_anon_WITH_RC4_128_MD5"};
+        ((SSLSocket) tcpSocket).setEnabledCipherSuites(enabledCipherSuites);
+      }
+
+      tcpSocket.connect(new InetSocketAddress(serverAddress, tcpPort), timeout);
+      tcpInput = new BufferedInputStream(tcpSocket.getInputStream());
+      tcpOutput = new BufferedOutputStream(tcpSocket.getOutputStream());
+
+      startTCPListener();
+      connected = true;
+      if (udpPort != -1) {
+        startUDPListener();
+        send(new byte[0], Delivery.UNRELIABLE);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-
-    tcpSocket.connect(new InetSocketAddress(serverAddress, tcpPort), timeout);
-    tcpInput = new BufferedInputStream(tcpSocket.getInputStream());
-    tcpOutput = new BufferedOutputStream(tcpSocket.getOutputStream());
-
-    startTCPListener();
-    connected = true;
-    if (udpPort != -1) {
-      startUDPListener();
-      send(new byte[0], Delivery.UNRELIABLE);
-    }
-
   }
 
   @Override
@@ -143,6 +156,7 @@ public class ClientConnection extends Connection {
 
   private void startTCPListener() {
     Thread t = new Thread(new Runnable() {
+      @Override
       public void run() {
         while (true) {
           byte[] ret;
@@ -187,6 +201,7 @@ public class ClientConnection extends Connection {
 
   private void startUDPListener() {
     Thread t = new Thread(new Runnable() {
+      @Override
       public void run() {
         final int BUF_SIZE = 2048;
         final DatagramPacket inputPacket = new DatagramPacket(new byte[BUF_SIZE], BUF_SIZE);
