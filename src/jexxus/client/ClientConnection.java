@@ -1,23 +1,19 @@
 package jexxus.client;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
-
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-
 import jexxus.common.Connection;
 import jexxus.common.ConnectionListener;
 import jexxus.common.Delivery;
+import jexxus.common.ResuableOutputStream;
+import jexxus.common.ReusableInputStream;
 
 /**
  * Used to establish a connection to a server.
@@ -33,8 +29,8 @@ public class ClientConnection extends Connection {
   protected final int tcpPort, udpPort;
   private DatagramPacket packet;
   private boolean connected = false;
-  private InputStream tcpInput;
-  private OutputStream tcpOutput;
+  private ReusableInputStream tcpInput;
+  private ResuableOutputStream tcpOutput;
   private final boolean useSSL;
 
   /**
@@ -110,8 +106,8 @@ public class ClientConnection extends Connection {
       }
 
       tcpSocket.connect(new InetSocketAddress(serverAddress, tcpPort), timeout);
-      tcpInput = new BufferedInputStream(tcpSocket.getInputStream());
-      tcpOutput = new BufferedOutputStream(tcpSocket.getOutputStream());
+      tcpInput = new ReusableInputStream(tcpSocket.getInputStream());
+      tcpOutput = new ResuableOutputStream(tcpSocket.getOutputStream());
 
       startTCPListener();
       connected = true;
@@ -244,12 +240,12 @@ public class ClientConnection extends Connection {
   }
 
   @Override
-  protected InputStream getTCPInputStream() {
+  protected ReusableInputStream getTCPInputStream() {
     return tcpInput;
   }
 
   @Override
-  protected OutputStream getTCPOutputStream() {
+  protected ResuableOutputStream getTCPOutputStream() {
     return tcpOutput;
   }
 }

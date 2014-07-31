@@ -1,9 +1,14 @@
 package jexxus.server;
 
-import java.io.*;
-import java.net.*;
-
-import jexxus.common.*;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.SocketException;
+import jexxus.common.Connection;
+import jexxus.common.ConnectionListener;
+import jexxus.common.Delivery;
+import jexxus.common.ResuableOutputStream;
+import jexxus.common.ReusableInputStream;
 
 /**
  * Represents a server's connection to a client.
@@ -12,8 +17,8 @@ public class ServerConnection extends Connection {
 
   private final Server controller;
   private final Socket socket;
-  private final OutputStream tcpOutput;
-  private final InputStream tcpInput;
+  private final ResuableOutputStream tcpOutput;
+  private final ReusableInputStream tcpInput;
   private boolean connected = true;
   private final String ip;
   private int udpPort = -1;
@@ -25,14 +30,15 @@ public class ServerConnection extends Connection {
     this.controller = controller;
     this.socket = socket;
     this.ip = socket.getInetAddress().getHostAddress();
-    tcpOutput = new BufferedOutputStream(socket.getOutputStream());
-    tcpInput = new BufferedInputStream(socket.getInputStream());
+    tcpOutput = new ResuableOutputStream(socket.getOutputStream());
+    tcpInput = new ReusableInputStream(socket.getInputStream());
 
     startTCPListener();
   }
 
   private void startTCPListener() {
     Thread t = new Thread(new Runnable() {
+      @Override
       public void run() {
         while (true) {
           byte[] ret;
@@ -87,7 +93,7 @@ public class ServerConnection extends Connection {
         sendTCP(data);
       } catch (IOException e) {
         System.err.println("Error writing TCP data.");
-        System.err.println(e.toString());
+        e.printStackTrace();
       }
     } else if (deliveryType == Delivery.UNRELIABLE) {
       controller.sendUDP(data, this);
@@ -113,9 +119,7 @@ public class ServerConnection extends Connection {
     }
     try {
       tcpOutput.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    } catch (IOException e) {}
     try {
       socket.close();
     } catch (IOException e) {
@@ -157,12 +161,12 @@ public class ServerConnection extends Connection {
   }
 
   @Override
-  protected InputStream getTCPInputStream() {
+  protected ReusableInputStream getTCPInputStream() {
     return tcpInput;
   }
 
   @Override
-  protected OutputStream getTCPOutputStream() {
+  protected ResuableOutputStream getTCPOutputStream() {
     return tcpOutput;
   }
 
