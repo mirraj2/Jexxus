@@ -1,6 +1,7 @@
 package common;
 
 import java.nio.ByteBuffer;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -23,5 +24,4 @@ public class ByteTests {
 		ByteBuffer bb2 = ByteBuffer.wrap(bb.array());
 		Assert.assertEquals(val, bb2.getLong());
 	}
-
 }
