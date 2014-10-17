@@ -17,124 +17,128 @@ import java.util.zip.Inflater;
  */
 public abstract class Connection {
 
-	private static final int MAGIC_NUMBER = 1304231989;
+  private static final int MAGIC_NUMBER = 1304231989;
 
-	private long bytesSent = 0;
+  private long bytesSent = 0;
 
-	protected ConnectionListener listener;
+  protected ConnectionListener listener;
 
-	/**
-	 * Checks to see whether the current connection is open.
-	 * 
-	 * @return True if the connection is established.
-	 */
-	public abstract boolean isConnected();
+  /**
+   * Checks to see whether the current connection is open.
+   * 
+   * @return True if the connection is established.
+   */
+  public abstract boolean isConnected();
 
-	/**
-	 * Sends the given data over this connection.
-	 * 
-	 * @param data
-	 *            The data to send to the other computer.
-	 * @param deliveryType
-	 *            The requirements for the delivery of this data.
-	 */
-	public abstract void send(byte[] data, Delivery deliveryType);
+  public void send(byte[] data) {
+    send(data, Delivery.RELIABLE);
+  }
 
-	protected abstract InputStream getTCPInputStream();
+  /**
+   * Sends the given data over this connection.
+   * 
+   * @param data
+   *            The data to send to the other computer.
+   * @param deliveryType
+   *            The requirements for the delivery of this data.
+   */
+  public abstract void send(byte[] data, Delivery deliveryType);
 
-	protected abstract OutputStream getTCPOutputStream();
+  protected abstract InputStream getTCPInputStream();
 
-	/**
-	 * Closes the connection. Further data may not be transfered across this link.
-	 */
-	public abstract void close();
+  protected abstract OutputStream getTCPOutputStream();
 
-	private final byte[] headerInput = new byte[8];
-	private final byte[] headerOutput = new byte[8];
+  /**
+   * Closes the connection. Further data may not be transfered across this link.
+   */
+  public abstract void close();
 
-	public Connection(ConnectionListener listener) {
-		if (listener == null) {
-			throw new RuntimeException("You must supply a connection listener.");
-		}
-		this.listener = listener;
-	}
+  private final byte[] headerInput = new byte[8];
+  private final byte[] headerOutput = new byte[8];
 
-	protected byte[] readTCP() throws IOException {
-		InputStream tcpInput = getTCPInputStream();
+  public Connection(ConnectionListener listener) {
+    if (listener == null) {
+      throw new RuntimeException("You must supply a connection listener.");
+    }
+    this.listener = listener;
+  }
 
-		if (tcpInput.read(headerInput) == -1) {
-			return null;
-		}
-		int magicNumber = ByteBuffer.wrap(headerInput).getInt();
-		if (magicNumber != MAGIC_NUMBER) {
-			throw new InvalidProtocolException("Bad magic number: " + magicNumber);
-		}
-		int len = ByteBuffer.wrap(headerInput).getInt(4);
-		byte[] data = new byte[len];
-		int count = 0;
-		while (count < len) {
-			count += tcpInput.read(data, count, len - count);
-		}
+  protected byte[] readTCP() throws IOException {
+    InputStream tcpInput = getTCPInputStream();
 
-		data = decompress(data);
+    if (tcpInput.read(headerInput) == -1) {
+      return null;
+    }
+    int magicNumber = ByteBuffer.wrap(headerInput).getInt();
+    if (magicNumber != MAGIC_NUMBER) {
+      throw new InvalidProtocolException("Bad magic number: " + magicNumber);
+    }
+    int len = ByteBuffer.wrap(headerInput).getInt(4);
+    byte[] data = new byte[len];
+    int count = 0;
+    while (count < len) {
+      count += tcpInput.read(data, count, len - count);
+    }
 
-		return data;
-	}
+    data = decompress(data);
 
-	protected void sendTCP(byte[] data) throws IOException {
-		OutputStream tcpOutput = getTCPOutputStream();
+    return data;
+  }
 
-		data = compress(data);
-		ByteBuffer.wrap(headerOutput).putInt(MAGIC_NUMBER);
-		ByteBuffer.wrap(headerOutput).putInt(4, data.length);
-		tcpOutput.write(headerOutput);
-		tcpOutput.write(data);
-		tcpOutput.flush();
+  protected void sendTCP(byte[] data) throws IOException {
+    OutputStream tcpOutput = getTCPOutputStream();
 
-		bytesSent += data.length;
-	}
+    data = compress(data);
+    ByteBuffer.wrap(headerOutput).putInt(MAGIC_NUMBER);
+    ByteBuffer.wrap(headerOutput).putInt(4, data.length);
+    tcpOutput.write(headerOutput);
+    tcpOutput.write(data);
+    tcpOutput.flush();
 
-	protected byte[] compress(byte[] data) {
-		Deflater compressor = new Deflater();
-		compressor.setInput(data);
-		compressor.finish();
+    bytesSent += data.length;
+  }
 
-		ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
-		// Compress the data
-		byte[] buf = new byte[1024];
-		while (!compressor.finished()) {
-			int count = compressor.deflate(buf);
-			bos.write(buf, 0, count);
-		}
+  protected byte[] compress(byte[] data) {
+    Deflater compressor = new Deflater();
+    compressor.setInput(data);
+    compressor.finish();
 
-		return bos.toByteArray();
-	}
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
+    // Compress the data
+    byte[] buf = new byte[1024];
+    while (!compressor.finished()) {
+      int count = compressor.deflate(buf);
+      bos.write(buf, 0, count);
+    }
 
-	protected byte[] decompress(byte[] data) {
-		Inflater decompressor = new Inflater();
-		decompressor.setInput(data);
+    return bos.toByteArray();
+  }
 
-		ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
+  protected byte[] decompress(byte[] data) {
+    Inflater decompressor = new Inflater();
+    decompressor.setInput(data);
 
-		byte[] buf = new byte[1024];
-		while (!decompressor.finished()) {
-			try {
-				int count = decompressor.inflate(buf);
-				bos.write(buf, 0, count);
-			} catch (DataFormatException e) {
-				throw new RuntimeException(e);
-			}
-		}
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
 
-		return bos.toByteArray();
-	}
+    byte[] buf = new byte[1024];
+    while (!decompressor.finished()) {
+      try {
+        int count = decompressor.inflate(buf);
+        bos.write(buf, 0, count);
+      } catch (DataFormatException e) {
+        throw new RuntimeException(e);
+      }
+    }
 
-	public void setConnectionListener(ConnectionListener listener) {
-		this.listener = listener;
-	}
+    return bos.toByteArray();
+  }
 
-	public long getBytesSent() {
-		return bytesSent;
-	}
+  public void setConnectionListener(ConnectionListener listener) {
+    this.listener = listener;
+  }
+
+  public long getBytesSent() {
+    return bytesSent;
+  }
 
 }

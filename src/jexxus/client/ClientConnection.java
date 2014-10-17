@@ -10,11 +10,9 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
-
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-
 import jexxus.common.Connection;
 import jexxus.common.ConnectionListener;
 import jexxus.common.Delivery;
@@ -91,8 +89,6 @@ public class ClientConnection extends Connection {
 
   /**
    * Tries to open a connection to the server.
-   * 
-   * @return true if the connection was successful, false otherwise.
    */
   public synchronized void connect(int timeout) {
     if (connected) {
