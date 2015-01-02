@@ -21,7 +21,10 @@ public class Connection {
   public final String ip;
   private final InputStream input;
   private final OutputStream output;
+  private boolean connected = false;
   private Consumer<byte[]> messageCallback = (byte[] data) -> {
+  };
+  private Runnable disconnectCallback = () -> {
   };
 
   Connection(Socket socket, boolean compressed) throws Exception {
@@ -37,15 +40,28 @@ public class Connection {
     return this;
   }
 
+  public boolean isConnected() {
+    return connected;
+  }
+
   public Connection onMessage(Consumer<byte[]> callback) {
     messageCallback = callback;
     return this;
   }
 
+  public Connection onDisconnect(Runnable callback) {
+    disconnectCallback = callback;
+    return this;
+  }
+
   private Runnable listener = () -> {
+    connected = true;
     while (true) {
       try {
         byte[] data = readTCP();
+        if (data == null) {
+          break;
+        }
         try {
           messageCallback.accept(data);
         } catch (Throwable t) {
@@ -53,9 +69,11 @@ public class Connection {
         }
       } catch (Exception e) {
         e.printStackTrace();
-        return;
+        break;
       }
     }
+    connected = false;
+    disconnectCallback.run();
   };
 
   private byte[] readTCP() throws Exception {

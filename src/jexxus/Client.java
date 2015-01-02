@@ -43,16 +43,16 @@ public class Client {
     return this;
   }
 
+  public boolean isConnected() {
+    return conn != null && conn.isConnected();
+  }
+
   public Client send(byte[] data) {
     conn.send(data);
     return this;
   }
 
-  public Client connect() {
-    return connect(1000);
-  }
-
-  public Client connect(int timeoutMillis) {
+  public boolean connect() {
     try {
       SocketFactory socketFactory =
           ssl ? SSLSocketFactory.getDefault() : SocketFactory.getDefault();
@@ -63,16 +63,16 @@ public class Client {
         ((SSLSocket) tcpSocket).setEnabledCipherSuites(enabledCipherSuites);
       }
 
-      tcpSocket.connect(new InetSocketAddress(ip, port), timeoutMillis);
+      tcpSocket.connect(new InetSocketAddress(ip, port), 2000);
 
       conn = new Connection(tcpSocket, compressed);
       conn.onMessage(messageCallback);
       conn.listen();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
 
-    return this;
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
   }
 
 }
