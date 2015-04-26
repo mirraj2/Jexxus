@@ -7,7 +7,7 @@ Contains both server and client capabilities. It is extremely easy to set up a s
 The code below will help you set up your first server/client. They both use the "DebugConnectionListener", but you can replace that with your own custom connectionlistener which handles your application's logic
 
 
-````
+```java
 public class DebugConnectionListener implements ConnectionListener{
 
   public void connectionBroken(Connection broken, boolean forced){
@@ -22,11 +22,11 @@ public class DebugConnectionListener implements ConnectionListener{
     System.out.println("Client Connected: "+conn.getIP());
   }
 }
-````
+```
 
 To following code is all you need to set up a server.
 
-````
+```java
 Server server = new Server(new DebugConnectionListener(), 15652);
 server.startServer();
 To connect a client to the server:
@@ -38,6 +38,6 @@ ClientConnection conn = new ClientConnection(new DebugConnectionListener(), "loc
 conn.connect();
 //send with the TCP Protocol
 conn.send("Hello TCP".getBytes(), Delivery.RELIABLE);
-````
+```
 
 Try it out! It's really easy to get started.
