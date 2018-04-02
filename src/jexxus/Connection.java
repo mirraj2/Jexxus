@@ -3,6 +3,7 @@ package jexxus;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -17,7 +18,9 @@ public class Connection {
   private final byte[] headerInput = new byte[4], headerOutput = new byte[4];
   private final byte[] decompressionBuffer = new byte[1024];
 
+  private final Socket socket;
   private boolean compressed;
+
   public final String ip;
   private final InputStream input;
   private final OutputStream output;
@@ -28,6 +31,7 @@ public class Connection {
   };
 
   Connection(Socket socket, boolean compressed) throws Exception {
+    this.socket = socket;
     this.compressed = compressed;
 
     ip = socket.getInetAddress().getHostAddress();
@@ -144,6 +148,14 @@ public class Connection {
     }
 
     return bos.toByteArray();
+  }
+
+  public void close() {
+    try {
+      socket.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
 }

@@ -76,4 +76,8 @@ public class Client {
     }
   }
 
+  public void exit() {
+    conn.close();
+  }
+
 }
