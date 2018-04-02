@@ -76,6 +76,10 @@ public class Client {
     }
   }
 
+  public Connection getConnection() {
+    return conn;
+  }
+
   public void exit() {
     conn.close();
   }
