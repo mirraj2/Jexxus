@@ -72,7 +72,6 @@ public class Connection {
           t.printStackTrace();
         }
       } catch (Exception e) {
-        e.printStackTrace();
         break;
       }
     }
