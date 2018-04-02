@@ -10,7 +10,6 @@
     <property name="source" value="9"/>
     <path id="Jexxus.classpath">
         <pathelement location="bin"/>
-        <path refid="JUnit 4.libraryclasspath"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
