@@ -3,6 +3,7 @@ package jexxus;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.function.Consumer;
+
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
@@ -50,8 +51,8 @@ public class Server {
       tcpSocket = socketFactory.createServerSocket(port);
 
       if (ssl) {
-        final String[] enabledCipherSuites = { "SSL_DH_anon_WITH_RC4_128_MD5" };
-        ((SSLServerSocket) tcpSocket).setEnabledCipherSuites(enabledCipherSuites);
+        SSLServerSocket sslSocket = (SSLServerSocket) tcpSocket;
+        sslSocket.setEnabledCipherSuites(sslSocket.getSupportedCipherSuites());
       }
 
       startTCPListener();
